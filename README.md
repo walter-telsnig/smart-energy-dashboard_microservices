@@ -1,0 +1,42 @@
+# Smart Energy Dashboard V3 (HEMS)
+
+A robust, local microservice architecture for Home Energy Management using Python, FastAPI, InfluxDB, and Plotly Dash.
+
+## Architecture
+
+The project consists of 5 microservices orchestrated via Docker Compose:
+
+1.  **AuthService (8003)**:
+    -   Handles User Registration and Login.
+    -   Issues JWT tokens secured with Argon2 password hashing.
+    -   Database: Local SQLite (`users.db`).
+2.  **IngestService (8001)**:
+    -   Imports initial CSV data on startup.
+    -   Simulates live energy flow data (PV & Consumption) every 15 seconds.
+    -   Writes to InfluxDB.
+3.  **OptimizationService (8002)**:
+    -   Calculates optimal Battery SoC forecast for the next 24h.
+    -   Writes measurements to InfluxDB (`forecast_soc`).
+4.  **APIService (8000)**:
+    -   Read-only gateway for the frontend.
+    -   Aggregates live status, historical timeseries, and forecast data from InfluxDB.
+5.  **Frontend (8050)**:
+    -   Plotly Dash application.
+    -   Login interface.
+    -   Live updating graphs for Energy Flow and Battery Forecast.
+
+## Prerequisites
+
+-   Docker Desktop
+-   Docker Compose
+
+## Quick Start
+
+1.  **Install**: Follow instructions in `How to install.md`.
+2.  **Access**: Open `http://localhost:8050`.
+3.  **Login**: Register a new user via API (Postman) or use the CLI script referenced in install guide.
+
+## Development
+
+-   **Code Quality**: Enforced via SonarQube.
+-   **Testing**: `pytest` and `pytest-cov`.

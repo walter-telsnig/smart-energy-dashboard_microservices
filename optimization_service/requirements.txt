@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+influxdb-client
+python-jose[cryptography]
+pandas
+numpy
+python-multipart
+pytest
+pytest-cov
