@@ -8,19 +8,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # Config
-# Stellen Sie sicher, dass diese Variablen auf die korrekten Services zeigen
 API_SERVICE_URL = os.getenv("API_SERVICE_URL", "http://localhost:8000")
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://localhost:8003")
 
-# suppress_callback_exceptions MUSS gesetzt sein
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY], suppress_callback_exceptions=True)
 server = app.server
 
-# -------------------------------------------------------------
-# Layouts
-# -------------------------------------------------------------
-
-# LOGIN LAYOUT: Enthält KEINE Klassen zur Höhen- oder Flexbox-Kontrolle (page-content macht das)
+# Layout
 login_layout = dbc.Container([
     dbc.Row([
         dbc.Col([
@@ -29,10 +23,9 @@ login_layout = dbc.Container([
             dbc.Input(id="password-box", placeholder="Password", type="password", className="mb-2"),
             dbc.Button("Login", id="login-button", color="primary", className="w-100"),
             html.Div(id="login-output", className="text-danger mt-2")
-        # Offset 4 zentriert die 4 Einheiten breite Spalte horizontal
-        ], width={"size": 4, "offset": 4}) 
-    ])
-]) 
+        ], width={"size": 4, "offset": 4})
+    ], className="h-100 d-flex align-items-center justify-content-center")
+], className="h-100")
 
 dashboard_layout = dbc.Container([
     dbc.Row([
@@ -62,31 +55,23 @@ dashboard_layout = dbc.Container([
                 dbc.CardBody(dcc.Graph(id="soc-graph"))
             ])
         ])
-    ])
+    ]),
+    
+    #dcc.Interval(id="interval-component", interval=15*1000, n_intervals=0)
 ], fluid=True)
 
-# HAUPT-LAYOUT
 app.layout = html.Div([
     dcc.Store(id="auth-token", storage_type="local"),
     dcc.Store(id="login-state", data=False),
 
-    # Interval muss hier im Haupt-Layout sein
     dcc.Interval(id="interval-component", interval=15*1000, n_intervals=0),
 
-    # page-content erhält KEINE Klassen, da sie dynamisch über Callback 
-    # gesteuert werden muss (Output("page-content", "className"))
-    # page-content initialisiert mit login_layout
-    html.Div(login_layout, id="page-content", className="h-100 d-flex justify-content-center align-items-center"),
-    
-# Der ÄUSSERE Div setzt die absolute Viewport-Höhe (vh-100)
-], className="vh-100") 
+    # Change because of visbility
+    html.Div(id="page-content", className="h-100 d-flex") 
+], className="vh-100") # vh-100 am äußeren Div bleibt
 
-# -------------------------------------------------------------
 # Callbacks
-# -------------------------------------------------------------
 
-# NEUER, ZUSÄTZLICHER CALLBACK: Dynamische Klassenzuweisung für page-content
-# Dieser Callback ist der entscheidende Fix, um Layout-Konflikte zu vermeiden
 # 1. Page Routing (Login vs Dashboard)
 @app.callback(
     Output("page-content", "children"),
@@ -94,50 +79,41 @@ app.layout = html.Div([
 )
 def render_content(is_logged_in):
     if is_logged_in:
-        # Dashboard: h-100 built-in
-        return html.Div(dashboard_layout, className="h-100")
-    
-    # Login: Centered using d-flex
-    return html.Div(login_layout, className="h-100 d-flex justify-content-center align-items-center")
+        return dashboard_layout
+    return login_layout
 
 # 2. Login Logic
-# 2. Login Logic
 @app.callback(
-    [Output("auth-token", "data", allow_duplicate=True), 
-     Output("login-state", "data", allow_duplicate=True), 
-     Output("login-output", "children")],
-    [Input("login-button", "n_clicks")],
-    [State("username-box", "value"), State("password-box", "value")],
-    prevent_initial_call=True
+    [Output("auth-token", "data"), Output("login-state", "data"), Output("login-output", "children")],
+    [Input("login-button", "n_clicks"), Input("logout-button", "n_clicks")],
+    [State("username-box", "value"), State("password-box", "value"), State("auth-token", "data")]
 )
-def login_user(n_clicks, username, password):
-    if not n_clicks:
+def handle_auth(n_login, n_logout, username, password, current_token):
+    ctx = callback_context
+    if not ctx.triggered:
+        # Check if token exists in store on load (optional implementation for persistence)
         return no_update, no_update, ""
-        
-    if not username or not password:
-        return no_update, no_update, "Please enter credentials."
     
-    try:
-        response = requests.post(f"{AUTH_SERVICE_URL}/token", data={"username": username, "password": password})
-        if response.status_code == 200:
-            token = response.json().get("access_token")
-            return token, True, ""
-        else:
-            return None, False, "Invalid credentials."
-    except Exception as e:
-        return None, False, f"Connection error: {str(e)}"
-
-# 3. Logout Logic
-@app.callback(
-    [Output("auth-token", "data", allow_duplicate=True), 
-     Output("login-state", "data", allow_duplicate=True)],
-    [Input("logout-button", "n_clicks")],
-    prevent_initial_call=True
-)
-def logout_user(n_clicks):
-    if n_clicks:
-        return None, False
-    return no_update, no_update
+    trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    
+    if trigger_id == "logout-button":
+        return None, False, ""
+    
+    if trigger_id == "login-button":
+        if not username or not password:
+            return no_update, no_update, "Please enter credentials."
+        
+        try:
+            response = requests.post(f"{AUTH_SERVICE_URL}/token", data={"username": username, "password": password})
+            if response.status_code == 200:
+                token = response.json().get("access_token")
+                return token, True, ""
+            else:
+                return None, False, "Invalid credentials."
+        except Exception as e:
+            return None, False, f"Connection error: {str(e)}"
+            
+    return no_update, no_update, ""
 
 # 3. Data Update Logic
 @app.callback(
@@ -153,12 +129,15 @@ def update_metrics(n, token):
     
     # Fetch Data
     try:
+        # Flow Timeseries
         r_flow = requests.get(f"{API_SERVICE_URL}/data/flow/timeseries", headers=headers)
         flow_data = r_flow.json() if r_flow.status_code == 200 else []
         
+        # SoC Timeseries
         r_soc = requests.get(f"{API_SERVICE_URL}/data/soc/timeseries", headers=headers)
         soc_data = r_soc.json() if r_soc.status_code == 200 else []
         
+        # Current Status
         r_status = requests.get(f"{API_SERVICE_URL}/data/current_status", headers=headers)
         status_data = r_status.json() if r_status.status_code == 200 else {}
         

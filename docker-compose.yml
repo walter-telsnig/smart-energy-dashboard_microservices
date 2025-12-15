@@ -14,6 +14,7 @@ services:
       - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
       - DOCKER_INFLUXDB_INIT_ORG=myorg
       - DOCKER_INFLUXDB_INIT_BUCKET=hems_data
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token # new
       - DOCKER_INFLUXDB_INIT_RETENTION=4w
 
   auth_service:
@@ -85,6 +86,8 @@ services:
     depends_on:
       - api_service
       - auth_service
+    volumes:
+      - ./frontend:/app
 
 volumes:
   influxdb_data:

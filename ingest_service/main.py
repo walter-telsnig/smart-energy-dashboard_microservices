@@ -1,7 +1,7 @@
 import asyncio
 import os
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -52,6 +52,27 @@ async def startup_event():
     if os.path.exists(csv_path):
         print("Loading initial mock data...")
         df = pd.read_csv(csv_path)
+
+        # --- START KORREKTUR FÜR VERALTETE ZEITSTEMPEL ---
+        # Das ist die kritische Änderung, um das 422 Problem zu beheben.
+        
+        # Berechne die Verschiebung: Wir bringen den ältesten CSV-Zeitstempel
+        # auf 3 Tage vor UTC-Jetzt. Das garantiert, dass alle Daten innerhalb 
+        # der 4-Wochen-Retention Policy liegen.
+
+
+        # OLD: oldest_csv_time = pd.to_datetime(df['timestamp']).min()
+        # NEU: Entferne die Zeitzonen-Information (macht das Objekt tz-naiv)
+        oldest_csv_time = pd.to_datetime(df['timestamp']).min().tz_localize(None) 
+        
+        target_time = datetime.utcnow() - timedelta(hours=20)
+        time_offset = target_time - oldest_csv_time
+        
+        # Wende den Zeit-Offset auf alle Zeitstempel in der DataFrame an
+        df['timestamp'] = pd.to_datetime(df['timestamp']) + time_offset
+        # --- ENDE KORREKTUR ---
+        
+        
         for _, row in df.iterrows():
             ts = pd.to_datetime(row['timestamp'])
             write_data(
