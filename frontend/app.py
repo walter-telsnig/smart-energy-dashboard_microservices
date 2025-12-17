@@ -169,12 +169,42 @@ def update_metrics(n, token):
         r_weather = requests.get(f"{API_SERVICE_URL}/data/weather", headers=headers)
         weather_data = r_weather.json() if r_weather.status_code == 200 else {}
         
+        # Fetch Irradiance
+        r_irr = requests.get(f"{API_SERVICE_URL}/data/weather/irradiance", headers=headers)
+        irr_data = r_irr.json() if r_irr.status_code == 200 else []
+        
     except Exception:
         return no_update, no_update, "Error fetching data"
     
     # Create Flow Graph
     fig_flow = go.Figure()
-    fig_flow.update_layout(title="Power Flow (kW)", template="plotly_dark")
+    # Update layout to support secondary axis
+    fig_flow.update_layout(
+        title="Power Flow (kW) & Solar Irradiance", 
+        template="plotly_dark",
+        yaxis=dict(title="Power (kW)"),
+        yaxis2=dict(
+            title="Irradiance (W/m²)",
+            overlaying="y",
+            side="right"
+        ),
+        legend=dict(x=0, y=1.1, orientation="h")
+    )
+    
+    # Trace 1: Irradiance (Background/Secondary) - Added first to be behind if filled, but line is fine
+    if irr_data:
+        df_irr = pd.DataFrame(irr_data)
+        if 'timestamp' in df_irr.columns:
+            # OpenMeteo returns ISO strings that Plotly handles well
+            fig_flow.add_trace(go.Scatter(
+                x=df_irr['timestamp'], 
+                y=df_irr['irradiance'], 
+                name='Solar Irradiance',
+                yaxis='y2',
+                line=dict(color='orange', dash='dot'),
+                opacity=0.7
+            ))
+            
     if flow_data:
         df_flow = pd.DataFrame(flow_data)
         if 'timestamp' in df_flow.columns:

@@ -61,6 +61,29 @@ def get_weather():
     except Exception as e:
         return {"error": "Failed to fetch weather", "details": str(e)}
 
+@app.get("/data/weather/irradiance", dependencies=[Depends(verify_token)])
+def get_irradiance():
+    """
+    Fetches hourly solar irradiance (shortwave_radiation) for Klagenfurt.
+    Returns timeseries for graph overlay.
+    """
+    try:
+        # Klagenfurt coordinates, past_days=1 to get recent history match with monitoring
+        url = "https://api.open-meteo.com/v1/forecast?latitude=46.6247&longitude=14.3053&hourly=shortwave_radiation&past_days=1&forecast_days=1"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            hourly = data.get("hourly", {})
+            times = hourly.get("time", [])
+            values = hourly.get("shortwave_radiation", [])
+            
+            # Zip into list of dicts
+            return [{"timestamp": t, "irradiance": v} for t, v in zip(times, values)]
+        else:
+            return []
+    except Exception:
+        return []
+
 def clean_influx_data(record):
     """
     Cleans InfluxDB record dictionary for JSON response.
