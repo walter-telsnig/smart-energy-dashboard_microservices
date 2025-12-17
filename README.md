@@ -52,3 +52,30 @@ With docker-compose down, all services will be stopped and the containers will b
 
 ![Docker Desktop](docs/images/Docker_Desktop_001.png)
 
+## Mermaid (Test)
+graph TD
+    %% User Interaction
+    User((User)) -->|Browser: 8050| FE[Frontend - Dash]
+    
+    %% Authentication Flow
+    FE -->|Auth Request| AS[AuthService - 8003]
+    AS -.->|JWT Token| FE
+    AS --- DB_SQL[(SQLite - users.db)]
+
+    %% Data Retrieval
+    FE -->|Data Request + JWT| API[APIService - 8000]
+    API -->|Read-only Query| DB_INFLUX[(InfluxDB)]
+
+    %% Backend Processes
+    subgraph Data-Engine
+        IS[IngestService - 8001] -->|Write Energy Flow| DB_INFLUX
+        OS[OptimizationService - 8002] -->|Read Flow / Write SoC Forecast| DB_INFLUX
+    end
+
+    %% Styles
+    style FE fill:#2c3e50,color:#fff
+    style AS fill:#8e44ad,color:#fff
+    style IS fill:#27ae60,color:#fff
+    style OS fill:#e67e22,color:#fff
+    style API fill:#2980b9,color:#fff
+    style DB_INFLUX fill:#000,color:#fff
