@@ -8,7 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # Config
-# Stellen Sie sicher, dass diese Variablen auf die korrekten Services zeigen
+# Both services must point to the proper ports
 API_SERVICE_URL = os.getenv("API_SERVICE_URL", "http://localhost:8000")
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://localhost:8003")
 
@@ -24,19 +24,22 @@ server = app.server
 login_layout = dbc.Container([
     dbc.Row([
         dbc.Col([
-            html.H2("HEMS Login", className="text-center mb-4"),
-            dbc.Input(id="username-box", placeholder="Username", type="text", className="mb-2"),
-            dbc.Input(id="password-box", placeholder="Password", type="password", className="mb-2"),
-            dbc.Button("Login", id="login-button", color="primary", className="w-100"),
+            html.H2("Smart Energy Dashboard", className="text-center mb-4"),
+            dbc.Input(id="username-box", placeholder="Username", type="text", className="mb-2", size="lg"),
+            dbc.Input(id="password-box", placeholder="Password", type="password", className="mb-2", size="lg"),
+            dbc.Button("Login", id="login-button", color="primary", className="w-100", size="lg"),
             html.Div(id="login-output", className="text-danger mt-2")
-        # Offset 4 zentriert die 4 Einheiten breite Spalte horizontal
-        ], width={"size": 4, "offset": 4}) 
+        # Responsive Layout:
+        # xs/sm: Almost full width
+        # md: slightly narrower
+        # lg: original 4 column width centered
+        ], width={"size": 10, "offset": 1, "md": 6, "md_offset": 3, "lg": 4, "lg_offset": 4}) 
     ])
 ]) 
 
 dashboard_layout = dbc.Container([
     dbc.Row([
-        dbc.Col(html.H2("Smart Energy Dashboard V3"), width=10),
+        dbc.Col(html.H2("Smart Energy Dashboard"), width=10),
         dbc.Col(dbc.Button("Logout", id="logout-button", color="danger"), width=2)
     ], className="mt-3 mb-4"),
     
@@ -100,7 +103,7 @@ def render_content(is_logged_in):
     # Login: Centered using d-flex
     return html.Div(login_layout, className="h-100 d-flex justify-content-center align-items-center")
 
-# 2. Login Logic
+
 # 2. Login Logic
 @app.callback(
     [Output("auth-token", "data", allow_duplicate=True), 
@@ -166,21 +169,22 @@ def update_metrics(n, token):
         return no_update, no_update, "Error fetching data"
     
     # Create Flow Graph
+    # Create Flow Graph
     fig_flow = go.Figure()
+    fig_flow.update_layout(title="Power Flow (kW)", template="plotly_dark")
     if flow_data:
         df_flow = pd.DataFrame(flow_data)
         if 'timestamp' in df_flow.columns:
             fig_flow.add_trace(go.Scatter(x=df_flow['timestamp'], y=df_flow.get('pv_power_kw', []), name='PV Generation'))
             fig_flow.add_trace(go.Scatter(x=df_flow['timestamp'], y=df_flow.get('consumption_power_kw', []), name='Consumption'))
-            fig_flow.update_layout(title="Power Flow (kW)", template="plotly_dark")
     
     # Create SoC Graph
     fig_soc = go.Figure()
+    fig_soc.update_layout(title="Battery SoC Forecast (%)", yaxis_range=[0, 100], template="plotly_dark")
     if soc_data:
         df_soc = pd.DataFrame(soc_data)
         if 'timestamp' in df_soc.columns:
             fig_soc.add_trace(go.Scatter(x=df_soc['timestamp'], y=df_soc.get('soc_percent', []), name='SoC Forecast', line=dict(color='green')))
-            fig_soc.update_layout(title="Battery SoC Forecast (%)", yaxis_range=[0, 100], template="plotly_dark")
             
     # Status Display
     status_html = html.Div([
