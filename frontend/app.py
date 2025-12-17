@@ -165,10 +165,13 @@ def update_metrics(n, token):
         r_status = requests.get(f"{API_SERVICE_URL}/data/current_status", headers=headers)
         status_data = r_status.json() if r_status.status_code == 200 else {}
         
+        # Fetch Weather
+        r_weather = requests.get(f"{API_SERVICE_URL}/data/weather", headers=headers)
+        weather_data = r_weather.json() if r_weather.status_code == 200 else {}
+        
     except Exception:
         return no_update, no_update, "Error fetching data"
     
-    # Create Flow Graph
     # Create Flow Graph
     fig_flow = go.Figure()
     fig_flow.update_layout(title="Power Flow (kW)", template="plotly_dark")
@@ -187,10 +190,20 @@ def update_metrics(n, token):
             fig_soc.add_trace(go.Scatter(x=df_soc['timestamp'], y=df_soc.get('soc_percent', []), name='SoC Forecast', line=dict(color='green')))
             
     # Status Display
+    temp_display = f"{weather_data.get('temperature_c', 'N/A')} °C" if 'temperature_c' in weather_data else "N/A"
+    loc_display = weather_data.get('location', 'Unknown')
+    
     status_html = html.Div([
+        html.H4("System Status", className="mb-3"),
         html.P(f"Current PV: {status_data.get('pv_power_kw', 0):.2f} kW"),
         html.P(f"Current Load: {status_data.get('consumption_power_kw', 0):.2f} kW"),
-        html.P(f"Last Updated: {status_data.get('timestamp', 'N/A')}")
+        html.Hr(),
+        html.H4("Weather", className="mb-2"),
+        html.P(f"Source: Open-Meteo API"),
+        html.P(f"Location: {loc_display}"),
+        html.P(f"Temperature: {temp_display}"),
+        html.Hr(),
+        html.Small(f"Last Updated: {status_data.get('timestamp', 'N/A')}")
     ])
     
     return fig_flow, fig_soc, status_html

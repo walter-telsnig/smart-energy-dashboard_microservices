@@ -1,4 +1,5 @@
 import os
+import requests
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -39,6 +40,26 @@ def soc_timeseries():
     # Note: OptimizationService creates forecast.
     data = get_soc_forecast(range_start="-1h") # Fetch recently generated forecasts
     return [clean_influx_data(record) for record in data]
+
+@app.get("/data/weather", dependencies=[Depends(verify_token)])
+def get_weather():
+    """
+    Fetches real-time weather for Klagenfurt (Lat: 46.6247, Lon: 14.3053)
+    from Open-Meteo API.
+    """
+    try:
+        # Klagenfurt coordinates
+        url = "https://api.open-meteo.com/v1/forecast?latitude=46.6247&longitude=14.3053&current=temperature_2m"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            # Extract temperature
+            temp = data.get("current", {}).get("temperature_2m")
+            return {"temperature_c": temp, "location": "Klagenfurt"}
+        else:
+            return {"error": "Weather API unreachable", "details": response.text}
+    except Exception as e:
+        return {"error": "Failed to fetch weather", "details": str(e)}
 
 def clean_influx_data(record):
     """

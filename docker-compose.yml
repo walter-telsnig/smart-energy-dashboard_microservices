@@ -16,6 +16,7 @@ services:
       - DOCKER_INFLUXDB_INIT_BUCKET=hems_data
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token # new
       - DOCKER_INFLUXDB_INIT_RETENTION=4w
+      - INFLUXD_LOG_LEVEL=error
 
   auth_service:
     build: ./auth_service
