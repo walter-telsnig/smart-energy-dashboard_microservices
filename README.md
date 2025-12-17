@@ -53,6 +53,7 @@ With docker-compose down, all services will be stopped and the containers will b
 ![Docker Desktop](docs/images/Docker_Desktop_001.png)
 
 ## Mermaid (Test)
+```mermaid
 graph TD
     %% User Interaction
     User((User)) -->|Browser: 8050| FE[Frontend - Dash]
