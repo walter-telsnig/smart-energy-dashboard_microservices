@@ -1,4 +1,5 @@
-# Smart Energy Dashboard V3 (HEMS)
+# Advanced Software Engineering (623.503, 25W)
+# Smart Energy Dashboard (Microservices)
 
 A robust, local microservice architecture for Home Energy Management using Python, FastAPI, InfluxDB, and Plotly Dash.
 
@@ -40,3 +41,13 @@ The project consists of 5 microservices orchestrated via Docker Compose:
 
 -   **Code Quality**: Enforced via SonarQube.
 -   **Testing**: `pytest` and `pytest-cov`.
+
+## Docker Desktop and Docker Compose
+
+-   **Docker Desktop**: Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop).
+-   **Docker Compose**: Download and install [Docker Compose](https://docs.docker.com/compose/install/).
+
+With docker-compose up -d --build, all services will be started in detached mode and you can access the dashboard at http://localhost:8050.
+With docker-compose down, all services will be stopped and the containers will be removed.
+![Docker Desktop](.docs/docker-desktop.png)
+

@@ -43,6 +43,8 @@ services:
       - JWT_SECRET_KEY=supersecretjwtkeyforlocaldev
     depends_on:
       - influxdb
+    volumes:
+      - ./ingest_service:/app
 
   optimization_service:
     build: ./optimization_service
@@ -58,6 +60,8 @@ services:
       - JWT_SECRET_KEY=supersecretjwtkeyforlocaldev
     depends_on:
       - influxdb
+    volumes:
+      - ./optimization_service:/app
 
   api_service:
     build: ./api_service
@@ -73,6 +77,8 @@ services:
       - JWT_SECRET_KEY=supersecretjwtkeyforlocaldev
     depends_on:
       - influxdb
+    volumes:
+      - ./api_service:/app
 
   frontend:
     build: ./frontend

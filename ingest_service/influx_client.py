@@ -21,3 +21,6 @@ def write_data(measurement: str, tags: dict, fields: dict, timestamp=None):
         point = point.time(timestamp, WritePrecision.NS)
     
     write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)
+
+def write_points(points: list):
+    write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=points)
