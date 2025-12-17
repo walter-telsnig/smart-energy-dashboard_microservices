@@ -49,5 +49,5 @@ The project consists of 5 microservices orchestrated via Docker Compose:
 
 With docker-compose up -d --build, all services will be started in detached mode and you can access the dashboard at http://localhost:8050.
 With docker-compose down, all services will be stopped and the containers will be removed.
-![Docker Desktop](.docs/docker-desktop.png)
+![Docker Desktop](.docs/Docker_Desktop_001.png)
 
