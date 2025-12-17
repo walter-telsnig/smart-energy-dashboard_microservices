@@ -10,11 +10,12 @@ docker-compose up -d --build
 
 This will start all 5 services + InfluxDB.
 Wait about 10-20 seconds for InfluxDB to initialize and the services to connect.
+Terminal will go maaaaad because of the csv->InfluxDB script for 10secs.
 
 ## 2. Register a User
 
 Since the frontend only implements Login, you need to register a user via API first.
-You can use **curl** or **Postman**.
+You can use **curl** or **Postman** (curl for ease of use).
 
 **Request:**
 `POST http://localhost:8003/register`
